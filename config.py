@@ -9,11 +9,14 @@ class Config:
     # Database configuration for Vercel
     # Use PostgreSQL for production, SQLite for development
     if os.environ.get('VERCEL'):
-        # Production on Vercel - use PostgreSQL
+        # Production on Vercel - use PostgreSQL with pg8000 driver
         database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
         if database_url:
+            # Convert psycopg2 URL to pg8000 URL
             if database_url.startswith('postgres://'):
-                database_url = database_url.replace('postgres://', 'postgresql://', 1)
+                database_url = database_url.replace('postgres://', 'postgresql+pg8000://', 1)
+            elif database_url.startswith('postgresql://'):
+                database_url = database_url.replace('postgresql://', 'postgresql+pg8000://', 1)
             SQLALCHEMY_DATABASE_URI = database_url
         else:
             # Fallback to SQLite if no PostgreSQL URL provided
