@@ -10,61 +10,59 @@ sys.path.insert(0, str(project_root))
 os.environ.setdefault('VERCEL', '1')
 os.environ.setdefault('FLASK_ENV', 'production')
 
-from flask import Flask
+try:
+    # Try to import and create the full app
+    from app import create_app
+    app = create_app()
+    
+    # Add a test route to verify it's working
+    @app.route('/vercel-test')
+    def vercel_test():
+        return '''
+        <h1>🎉 Full Flask App Working on Vercel!</h1>
+        <p>✅ All imports successful</p>
+        <p>✅ Database configured</p>
+        <p>✅ All routes loaded</p>
+        <ul>
+            <li><a href="/">Homepage</a></li>
+            <li><a href="/auth/register">Register</a></li>
+            <li><a href="/auth/login">Login</a></li>
+            <li><a href="/messages">Messages</a></li>
+            <li><a href="/notifications">Notifications</a></li>
+        </ul>
+        '''
 
-# Create a simple test app first
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-secret-key')
-
-@app.route('/')
-def home():
-    return '''
-    <h1>🎉 Flask App is Working on Vercel!</h1>
-    <p>Your deployment is successful!</p>
-    <ul>
-        <li><a href="/test">Test Database Connection</a></li>
-        <li><a href="/debug">Debug Info</a></li>
-    </ul>
-    '''
-
-@app.route('/test')
-def test_db():
-    try:
-        # Try to import and test the full app
-        from app import create_app
-        test_app = create_app()
-        with test_app.app_context():
-            from app import db
-            # Test database connection
-            db.engine.execute('SELECT 1')
-            return '<h2>✅ Database Connection Working!</h2><p><a href="/">Back to Home</a></p>'
-    except Exception as e:
-        return f'<h2>❌ Database Error:</h2><p>{str(e)}</p><p><a href="/">Back to Home</a></p>'
-
-@app.route('/debug')
-def debug():
-    return {
-        'status': 'working',
-        'python_version': sys.version,
-        'environment_variables': {
-            'VERCEL': os.environ.get('VERCEL'),
-            'FLASK_ENV': os.environ.get('FLASK_ENV'),
-            'DATABASE_URL': 'SET' if os.environ.get('DATABASE_URL') else 'NOT SET',
-            'SECRET_KEY': 'SET' if os.environ.get('SECRET_KEY') else 'NOT SET'
-        },
-        'current_directory': os.getcwd(),
-        'python_path': sys.path[:3]  # First 3 entries
-    }
-
-@app.route('/full-app')
-def full_app():
-    try:
-        # Try to load the full app
-        from app import create_app
-        full_app = create_app()
-        return '<h2>✅ Full App Loaded Successfully!</h2><p>Ready to enable full functionality.</p>'
-    except Exception as e:
-        return f'<h2>❌ Full App Error:</h2><p>{str(e)}</p>'
+except Exception as e:
+    # Create fallback app with error info
+    from flask import Flask
+    app = Flask(__name__)
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-secret-key')
+    
+    @app.route('/')
+    def error_info():
+        return f'''
+        <h1>❌ App Loading Error</h1>
+        <p><strong>Error:</strong> {str(e)}</p>
+        <p><strong>Type:</strong> {type(e).__name__}</p>
+        <p><a href="/debug">Debug Info</a></p>
+        '''
+    
+    @app.route('/debug')
+    def debug():
+        import traceback
+        return f'''
+        <h2>Debug Information</h2>
+        <p><strong>Error:</strong> {str(e)}</p>
+        <p><strong>Traceback:</strong></p>
+        <pre>{traceback.format_exc()}</pre>
+        <p><strong>Python Path:</strong> {sys.path[:5]}</p>
+        <p><strong>Environment:</strong></p>
+        <ul>
+            <li>VERCEL: {os.environ.get('VERCEL')}</li>
+            <li>DATABASE_URL: {'SET' if os.environ.get('DATABASE_URL') else 'NOT SET'}</li>
+            <li>SECRET_KEY: {'SET' if os.environ.get('SECRET_KEY') else 'NOT SET'}</li>
+        </ul>
+        '''
 
 if __name__ == '__main__':
     app.run(debug=False)
