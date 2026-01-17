@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Messages</h2>
+            </div>
+
+            {% if conversations %}
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Conversations</h5>
+                            </div>
+                            <div class="list-group list-group-flush" id="conversation-list">
+                                {% for partner_id, messages in conversations.items() %}
+                                    {% set partner = messages[0].sender if messages[0].sender_id != current_user.id else messages[0].recipient %}
+                                    {% set latest_message = messages[0] %}
+                                    {% set unread_count = messages | selectattr('recipient_id', 'equalto', current_user.id) | selectattr('is_read', 'equalto', false) | list | length %}
+                                    <a href="#" class="list-group-item list-group-item-action conversation-item" 
+                                       data-partner-id="{{ partner_id }}" data-partner-name="{{ partner.username }}">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ partner.username }}</h6>
+                                            <small class="text-muted">{{ latest_message.sent_at.strftime('%m/%d %H:%M') }}</small>
+                                        </div>
+                                        <p class="mb-1 text-truncate">{{ latest_message.content[:50] }}...</p>
+                                        {% if unread_count > 0 %}
+                                            <span class="badge badge-primary">{{ unread_count }}</span>
+                                        {% endif %}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="card" id="message-area" style="display: none;">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 id="conversation-title">Select a conversation</h5>
+                            </div>
+                            <div class="card-body" style="height: 400px; overflow-y: auto;" id="messages-container">
+                                <!-- Messages will be loaded here -->
+                            </div>
+                            <div class="card-footer">
+                                <form id="message-form" style="display: none;">
+                                    <div class="input-group">
+                                        <textarea class="form-control" id="message-content" placeholder="Type your message..." rows="2" maxlength="500"></textarea>
+                                        <div class="input-group-append">
+                                            <button class="btn btn-primary" type="submit">Send</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4" id="no-conversation-selected">
+                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Select a conversation to start messaging</p>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center mt-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No messages yet</h4>
+                    <p class="text-muted">Start a conversation by applying to projects or posting your own!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const conversationItems = document.querySelectorAll('.conversation-item');
+    const messageArea = document.getElementById('message-area');
+    const noConversationSelected = document.getElementById('no-conversation-selected');
+    const conversationTitle = document.getElementById('conversation-title');
+    const messagesContainer = document.getElementById('messages-container');
+    const messageForm = document.getElementById('message-form');
+    const messageContent = document.getElementById('message-content');
+    
+    let currentPartnerId = null;
+    
+    conversationItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all items
+            conversationItems.forEach(i => i.classList.remove('active'));
+            
+            // Add active class to clicked item
+            this.classList.add('active');
+            
+            // Get partner info
+            currentPartnerId = this.dataset.partnerId;
+            const partnerName = this.dataset.partnerName;
+            
+            // Update UI
+            conversationTitle.textContent = partnerName;
+            messageArea.style.display = 'block';
+            noConversationSelected.style.display = 'none';
+            messageForm.style.display = 'block';
+            
+            // Load messages for this conversation
+            loadMessages(currentPartnerId);
+        });
+    });
+    
+    messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!currentPartnerId || !messageContent.value.trim()) {
+            return;
+        }
+        
+        sendMessage(currentPartnerId, messageContent.value.trim());
+    });
+    
+    function loadMessages(partnerId) {
+        fetch(`/api/messages/${partnerId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayMessages(data.messages);
+                }
+            })
+            .catch(error => console.error('Error loading messages:', error));
+    }
+    
+    function displayMessages(messages) {
+        messagesContainer.innerHTML = '';
+        
+        messages.forEach(message => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `mb-3 ${message.sender_id === {{ current_user.id }} ? 'text-right' : 'text-left'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="d-inline-block p-2 rounded ${message.sender_id === {{ current_user.id }} ? 'bg-primary text-white' : 'bg-light'}" style="max-width: 70%;">
+                    <div>${message.content}</div>
+                    <small class="d-block mt-1 ${message.sender_id === {{ current_user.id }} ? 'text-light' : 'text-muted'}">${new Date(message.sent_at).toLocaleString()}</small>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+        });
+        
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    function sendMessage(partnerId, content) {
+        fetch('/api/messages/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                recipient_id: partnerId,
+                content: content
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageContent.value = '';
+                loadMessages(partnerId);
+            } else {
+                alert('Failed to send message');
+            }
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            alert('Failed to send message');
+        });
+    }
+});
+</script>
+{% endblock %}

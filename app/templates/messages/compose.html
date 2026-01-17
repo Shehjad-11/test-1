@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Send Message to {{ recipient.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-envelope"></i> Send Message to {{ recipient.username }}</h5>
+                    {% if project %}
+                        <small class="text-muted">Regarding project: {{ project.title }}</small>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="form-group">
+                            <label for="{{ form.content.id }}">{{ form.content.label.text }}</label>
+                            {{ form.content(class="form-control", rows="5", placeholder="Type your message here...") }}
+                            {% if form.content.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.content.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Maximum 500 characters</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('main.messages') }}" class="btn btn-secondary ml-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

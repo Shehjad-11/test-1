@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from config import Config
 from datetime import datetime
+import os
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -18,6 +19,15 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
+    
+    # Auto-create database tables for production deployment
+    if os.environ.get('VERCEL') or os.environ.get('FLASK_ENV') == 'production':
+        with app.app_context():
+            try:
+                db.create_all()
+                print("Database tables created successfully!")
+            except Exception as e:
+                print(f"Database creation error: {e}")
     
     # Add template filters
     @app.template_filter('days_until')

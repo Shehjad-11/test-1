@@ -381,3 +381,166 @@ def mark_notification_read(notification_id):
 def unread_notifications_count():
     count = NotificationService.get_unread_count(current_user.id)
     return jsonify({'count': count})
+@bp.route('/api/messages/<int:partner_id>')
+@login_required
+def get_messages(partner_id):
+    """Get all messages between current user and partner"""
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.recipient_id == partner_id)) |
+        ((Message.sender_id == partner_id) & (Message.recipient_id == current_user.id))
+    ).order_by(Message.sent_at.asc()).all()
+    
+    # Mark received messages as read
+    Message.query.filter_by(
+        sender_id=partner_id,
+        recipient_id=current_user.id,
+        is_read=False
+    ).update({'is_read': True})
+    db.session.commit()
+    
+    messages_data = []
+    for msg in messages:
+        messages_data.append({
+            'id': msg.id,
+            'sender_id': msg.sender_id,
+            'recipient_id': msg.recipient_id,
+            'content': msg.content,
+            'sent_at': msg.sent_at.isoformat(),
+            'is_read': msg.is_read
+        })
+    
+    return jsonify({'success': True, 'messages': messages_data})
+
+@bp.route('/api/messages/send', methods=['POST'])
+@login_required
+def send_message():
+    """Send a new message"""
+    data = request.get_json()
+    
+    if not data or 'recipient_id' not in data or 'content' not in data:
+        return jsonify({'success': False, 'error': 'Missing required fields'})
+    
+    recipient_id = data['recipient_id']
+    content = data['content'].strip()
+    project_id = data.get('project_id')  # Optional project context
+    
+    if not content or len(content) > 500:
+        return jsonify({'success': False, 'error': 'Invalid message content'})
+    
+    # Verify recipient exists and is not the sender
+    recipient = User.query.get(recipient_id)
+    if not recipient or recipient.id == current_user.id:
+        return jsonify({'success': False, 'error': 'Invalid recipient'})
+    
+    # If project_id is provided, verify it exists and user has access
+    if project_id:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'success': False, 'error': 'Invalid project'})
+        
+        # Check if user is involved in the project (either company owner or has applied)
+        is_company_owner = project.company_id == current_user.id
+        has_applied = Application.query.filter_by(
+            project_id=project_id, 
+            developer_id=current_user.id
+        ).first() is not None
+        
+        if not (is_company_owner or has_applied):
+            return jsonify({'success': False, 'error': 'No access to this project'})
+    
+    # Create new message
+    message = Message(
+        sender_id=current_user.id,
+        recipient_id=recipient_id,
+        content=content,
+        project_id=project_id
+    )
+    
+    db.session.add(message)
+    db.session.commit()
+    
+    # Create notification for recipient
+    NotificationService.create_notification(
+        recipient_id,
+        'New Message',
+        f'{current_user.username} sent you a message',
+        'message'
+    )
+    
+    return jsonify({'success': True, 'message_id': message.id})
+
+@bp.route('/messages/compose/<int:recipient_id>')
+@login_required
+def compose_message(recipient_id):
+    """Compose a new message to a specific user"""
+    recipient = User.query.get_or_404(recipient_id)
+    
+    if recipient.id == current_user.id:
+        flash('You cannot send a message to yourself.', 'error')
+        return redirect(url_for('main.messages'))
+    
+    # Get project context if provided
+    project_id = request.args.get('project_id', type=int)
+    project = None
+    if project_id:
+        project = Project.query.get(project_id)
+    
+    form = MessageForm()
+    if form.validate_on_submit():
+        message = Message(
+            sender_id=current_user.id,
+            recipient_id=recipient_id,
+            content=form.content.data,
+            project_id=project_id
+        )
+        
+        db.session.add(message)
+        db.session.commit()
+        
+        # Create notification for recipient
+        NotificationService.create_notification(
+            recipient_id,
+            'New Message',
+            f'{current_user.username} sent you a message',
+            'message'
+        )
+        
+        flash('Message sent successfully!', 'success')
+        return redirect(url_for('main.messages'))
+    
+    return render_template('messages/compose.html', form=form, recipient=recipient, project=project)
+
+@bp.route('/api/notifications/mark-all-read', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    """Mark all notifications as read for current user"""
+    try:
+        Notification.query.filter_by(
+            user_id=current_user.id,
+            is_read=False
+        ).update({'is_read': True})
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+@bp.route('/api/notifications/delete/<int:notification_id>', methods=['DELETE'])
+@login_required
+def delete_notification(notification_id):
+    """Delete a notification"""
+    notification = Notification.query.filter_by(
+        id=notification_id,
+        user_id=current_user.id
+    ).first()
+    
+    if not notification:
+        return jsonify({'success': False, 'error': 'Notification not found'})
+    
+    try:
+        db.session.delete(notification)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})

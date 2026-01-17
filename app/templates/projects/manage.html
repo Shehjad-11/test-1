@@ -113,6 +113,10 @@
                                                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#applicationModal{{ application.id }}">
                                                     View
                                                 </button>
+                                                <a href="{{ url_for('main.compose_message', recipient_id=application.developer_id, project_id=project.id) }}" 
+                                                   class="btn btn-outline-secondary" title="Send message">
+                                                    <i class="bi bi-chat-dots"></i>
+                                                </a>
                                                 {% if application.status == 'pending' and shortlisted|length < project.max_shortlist %}
                                                     <a href="{{ url_for('main.shortlist_application', application_id=application.id) }}" 
                                                        class="btn btn-success" onclick="return confirm('Shortlist this candidate?')">
@@ -216,6 +220,10 @@
                                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#submissionModal{{ submission.id }}">
                                                 View
                                             </button>
+                                            <a href="{{ url_for('main.compose_message', recipient_id=submission.application.developer_id, project_id=project.id) }}" 
+                                               class="btn btn-outline-secondary" title="Send message">
+                                                <i class="bi bi-chat-dots"></i>
+                                            </a>
                                             <a href="{{ url_for('main.submission_feedback', submission_id=submission.id) }}" class="btn btn-outline-secondary">
                                                 {{ 'Edit' if submission.score else 'Review' }}
                                             </a>
