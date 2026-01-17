@@ -1,20 +1,40 @@
-#!/usr/bin/env python3
-"""
-Vercel serverless function entry point for Flask app
-"""
-
 import os
 import sys
+from pathlib import Path
 
-# Add the parent directory to the Python path so we can import our app
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
-from app import create_app
+# Set environment for Vercel
+os.environ.setdefault('VERCEL', '1')
+os.environ.setdefault('FLASK_ENV', 'production')
 
-# Create the Flask app
-app = create_app()
+try:
+    from app import create_app
+    app = create_app()
+except ImportError as e:
+    # Fallback error app
+    from flask import Flask
+    app = Flask(__name__)
+    
+    @app.route('/')
+    def import_error():
+        return f"Import Error: {str(e)}<br>Python Path: {sys.path}", 500
+    
+    @app.route('/<path:path>')
+    def catch_all(path):
+        return f"Import Error: {str(e)}", 500
 
-# Vercel expects the app to be available as 'app'
-# This is the WSGI application that Vercel will use
-if __name__ == "__main__":
-    app.run()
+except Exception as e:
+    # Fallback error app for other errors
+    from flask import Flask
+    app = Flask(__name__)
+    
+    @app.route('/')
+    def general_error():
+        return f"Application Error: {str(e)}", 500
+    
+    @app.route('/<path:path>')
+    def catch_all_error(path):
+        return f"Application Error: {str(e)}", 500

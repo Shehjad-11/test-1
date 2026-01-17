@@ -4,15 +4,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production-vercel-deployment'
     
     # Database configuration for Vercel
     # Use PostgreSQL for production, SQLite for development
     if os.environ.get('VERCEL'):
         # Production on Vercel - use PostgreSQL
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
-        if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
-            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
+        database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+        if database_url:
+            if database_url.startswith('postgres://'):
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
+            SQLALCHEMY_DATABASE_URI = database_url
+        else:
+            # Fallback to SQLite if no PostgreSQL URL provided
+            SQLALCHEMY_DATABASE_URI = 'sqlite:///temp_collaboration_platform.db'
     else:
         # Development - use SQLite
         SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///collaboration_platform.db'
