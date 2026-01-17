@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <div class="hero-content fade-in">
+                    <h1 class="hero-title">Fair Project Collaboration Platform</h1>
+                    <p class="hero-subtitle">Connect companies with talented developers and designers through transparent, ethical project-based work. No free labor, fair compensation for all participants.</p>
+                    <div class="hero-buttons">
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg hover-lift">
+                            <i class="bi bi-rocket-takeoff me-2"></i>Get Started
+                        </a>
+                        <a href="{{ url_for('main.projects') }}" class="btn btn-outline-light btn-lg hover-lift">
+                            <i class="bi bi-search me-2"></i>Browse Projects
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="text-center">
+                    <i class="bi bi-people-fill hero-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="section section-light">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="section-title">How It Works</h2>
+                <p class="section-subtitle">A transparent, fair process for everyone involved in project collaboration</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card card-feature hover-lift fade-in">
+                    <div class="card-body">
+                        <div class="card-feature-icon">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">For Companies</h5>
+                        <p class="card-text">Post projects with clear requirements, shortlist talented candidates, review quality submissions, and select winners. Pay fair rewards to all participants who contribute value.</p>
+                        <div class="mt-auto">
+                            <small class="text-muted">
+                                <i class="bi bi-check-circle me-1"></i>Transparent process
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card card-feature hover-lift fade-in">
+                    <div class="card-body">
+                        <div class="card-feature-icon success">
+                            <i class="bi bi-code-slash"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">For Developers</h5>
+                        <p class="card-text">Apply to exciting projects, showcase your skills through real work, get shortlisted based on merit, and earn rewards for quality contributions. Build your portfolio and reputation.</p>
+                        <div class="mt-auto">
+                            <small class="text-muted">
+                                <i class="bi bi-trophy me-1"></i>Merit-based selection
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card card-feature hover-lift fade-in">
+                    <div class="card-body">
+                        <div class="card-feature-icon warning">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Fair & Transparent</h5>
+                        <p class="card-text">No free labor policy, clear project timelines, fair compensation structure, and ethical practices that support decent work for all participants in the ecosystem.</p>
+                        <div class="mt-auto">
+                            <small class="text-muted">
+                                <i class="bi bi-heart me-1"></i>Ethical practices
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="section bg-gradient-primary text-white">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 col-6 mb-4">
+                <div class="glass p-4 rounded">
+                    <h3 class="display-6 fw-bold mb-2">500+</h3>
+                    <p class="mb-0">Active Projects</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="glass p-4 rounded">
+                    <h3 class="display-6 fw-bold mb-2">1,200+</h3>
+                    <p class="mb-0">Developers</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="glass p-4 rounded">
+                    <h3 class="display-6 fw-bold mb-2">300+</h3>
+                    <p class="mb-0">Companies</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="glass p-4 rounded">
+                    <h3 class="display-6 fw-bold mb-2">$2M+</h3>
+                    <p class="mb-0">Paid Out</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Projects Section -->
+{% if projects %}
+<section class="section">
+    <div class="container">
+        <div class="row mb-5">
+            <div class="col-12 text-center">
+                <h2 class="section-title">Recent Projects</h2>
+                <p class="section-subtitle">Latest opportunities for developers and designers to showcase their skills</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% for project in projects %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card card-project hover-lift slide-in-up">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <span class="badge badge-success">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                                {{ project.status.title() }}
+                            </span>
+                            <div class="text-end">
+                                <div class="fw-bold text-success">${{ "%.0f"|format(project.winner_reward) }}</div>
+                                <small class="text-muted">Winner reward</small>
+                            </div>
+                        </div>
+                        
+                        <h5 class="card-title fw-bold mb-3">{{ project.title }}</h5>
+                        <p class="card-text text-muted mb-3">{{ project.description[:120] }}{% if project.description|length > 120 %}...{% endif %}</p>
+                        
+                        <div class="mb-3">
+                            {% for skill in project.required_skills.split(',')[:3] %}
+                                <span class="badge badge-light me-1 mb-1">{{ skill.strip() }}</span>
+                            {% endfor %}
+                            {% if project.required_skills.split(',')|length > 3 %}
+                                <span class="badge badge-light">+{{ project.required_skills.split(',')|length - 3 }} more</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar-event me-1"></i>
+                                Due {{ project.deadline.strftime('%b %d') }}
+                            </small>
+                            <a href="{{ url_for('main.project_detail', id=project.id) }}" class="btn btn-primary btn-sm">
+                                View Details <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="{{ url_for('main.projects') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-grid me-2"></i>View All Projects
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- CTA Section -->
+<section class="section bg-gradient-primary text-white">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="display-5 fw-bold mb-4">Ready to Start Collaborating?</h2>
+                <p class="lead mb-4 opacity-90">Join our platform and be part of ethical, fair project collaboration. Whether you're a company looking for talent or a developer seeking opportunities, we've got you covered.</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg hover-lift">
+                        <i class="bi bi-person-plus me-2"></i>Join as Developer
+                    </a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-outline-light btn-lg hover-lift">
+                        <i class="bi bi-building me-2"></i>Join as Company
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Grid -->
+<section class="section section-light">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="section-title">Why Choose CollabPlatform?</h2>
+                <p class="section-subtitle">Built with fairness, transparency, and quality in mind</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="text-center">
+                    <div class="bg-gradient-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-shield-check fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold">No Free Labor</h6>
+                    <p class="text-muted small">Everyone gets compensated for their valuable contributions</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="text-center">
+                    <div class="bg-gradient-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-eye fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold">Transparent Process</h6>
+                    <p class="text-muted small">Clear criteria, fair evaluation, and open communication</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="text-center">
+                    <div class="bg-gradient-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-star fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold">Quality Focus</h6>
+                    <p class="text-muted small">Merit-based selection ensures the best outcomes</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="text-center">
+                    <div class="bg-gradient-danger text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-people fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold">Community Driven</h6>
+                    <p class="text-muted small">Built by and for the developer and designer community</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

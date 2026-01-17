@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <!-- Project Header -->
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            {% set status_colors = {
+                                'open': 'success',
+                                'shortlisting': 'warning', 
+                                'submission': 'info',
+                                'completed': 'primary',
+                                'cancelled': 'danger'
+                            } %}
+                            <span class="badge bg-{{ status_colors.get(project.status, 'secondary') }} mb-2">
+                                {{ project.status.title() }}
+                            </span>
+                            <h1 class="fw-bold">{{ project.title }}</h1>
+                        </div>
+                        <div class="text-end">
+                            <div class="h4 text-success mb-0">${{ "%.0f"|format(project.winner_reward) }}</div>
+                            <small class="text-muted">Winner Reward</small>
+                            {% if project.participation_reward > 0 %}
+                                <div class="text-muted">+${{ "%.0f"|format(project.participation_reward) }} participation</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Project Description -->
+                    <div class="mb-4">
+                        <h5>Project Description</h5>
+                        <p class="text-muted">{{ project.description }}</p>
+                    </div>
+                    
+                    <!-- Required Skills -->
+                    <div class="mb-4">
+                        <h5>Required Skills</h5>
+                        <div>
+                            {% for skill in project.required_skills.split(',') %}
+                                <span class="badge bg-light text-dark me-2 mb-2">{{ skill.strip() }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Application Status -->
+                    {% if current_user.is_authenticated and current_user.role == 'developer' %}
+                        {% if user_application %}
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-info-circle"></i> Your Application Status</h6>
+                                <p class="mb-2">Status: <strong>{{ user_application.status.title() }}</strong></p>
+                                {% if user_application.status == 'shortlisted' %}
+                                    {% if user_application.submission %}
+                                        <p class="mb-0 text-success">✓ Work submitted successfully</p>
+                                        {% if user_application.submission.is_winner %}
+                                            <p class="mb-0 text-warning">🏆 Congratulations! You won this project!</p>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="{{ url_for('main.submit_work', application_id=user_application.id) }}" 
+                                           class="btn btn-success btn-sm">Submit Your Work</a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        {% elif project.status == 'open' %}
+                            <div class="d-grid">
+                                <a href="{{ url_for('main.apply_project', project_id=project.id) }}" 
+                                   class="btn btn-primary btn-lg">Apply to Project</a>
+                            </div>
+                        {% endif %}
+                    {% elif not current_user.is_authenticated %}
+                        <div class="alert alert-warning">
+                            <p class="mb-2">Want to apply to this project?</p>
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-primary me-2">Register</a>
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary">Login</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Project Stats -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="card-title">Project Details</h6>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <div class="h5 mb-0">{{ project.applications.count() }}</div>
+                                <small class="text-muted">Applications</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 mb-0">{{ project.max_shortlist }}</div>
+                            <small class="text-muted">Max Shortlist</small>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Deadline</small>
+                        <strong>{{ project.deadline.strftime('%B %d, %Y at %I:%M %p') }}</strong>
+                        <div class="mt-1">
+                            {% set days_left = project.deadline | days_until %}
+                            <span class="badge bg-{{ 'danger' if days_left < 3 else 'warning' if days_left < 7 else 'success' }}">
+                                {{ days_left if days_left > 0 else 0 }} days left
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Posted</small>
+                        <strong>{{ project.created_at.strftime('%B %d, %Y') }}</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Company Info -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Company</h6>
+                    {% if project.company_user.company_profile %}
+                        {% set company = project.company_user.company_profile %}
+                        <h5>{{ company.company_name }}</h5>
+                        {% if company.description %}
+                            <p class="text-muted small">{{ company.description[:100] }}...</p>
+                        {% endif %}
+                        
+                        {% if company.industry %}
+                            <div class="mb-2">
+                                <small class="text-muted">Industry:</small>
+                                <span class="badge bg-light text-dark">{{ company.industry }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if company.size %}
+                            <div class="mb-2">
+                                <small class="text-muted">Size:</small>
+                                <span class="badge bg-light text-dark">{{ company.size }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if company.location %}
+                            <div class="mb-2">
+                                <small class="text-muted">Location:</small>
+                                <span class="badge bg-light text-dark">{{ company.location }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if company.website %}
+                            <a href="{{ company.website }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-globe"></i> Visit Website
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <h5>{{ project.company_user.username }}</h5>
+                        <p class="text-muted">Company profile not completed</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="fw-bold">Developer Dashboard</h1>
+                <a href="{{ url_for('main.projects') }}" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Browse Projects
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="fw-bold">{{ total_applications }}</h4>
+                            <p class="mb-0">Applications</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-file-earmark-text fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="fw-bold">{{ shortlisted }}</h4>
+                            <p class="mb-0">Shortlisted</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-star fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="fw-bold">{{ submissions }}</h4>
+                            <p class="mb-0">Submissions</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-upload fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="fw-bold">{{ wins }}</h4>
+                            <p class="mb-0">Wins</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-trophy fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Profile Completion -->
+    {% if current_user.developer_profile %}
+        {% set profile = current_user.developer_profile %}
+        {% set completion = 0 %}
+        {% if profile.full_name %}{% set completion = completion + 20 %}{% endif %}
+        {% if profile.bio %}{% set completion = completion + 15 %}{% endif %}
+        {% if profile.skills %}{% set completion = completion + 25 %}{% endif %}
+        {% if profile.portfolio_url %}{% set completion = completion + 20 %}{% endif %}
+        {% if profile.github_url %}{% set completion = completion + 20 %}{% endif %}
+        
+        {% if completion < 100 %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Complete Your Profile</h6>
+                            <p class="mb-0">A complete profile increases your chances of getting shortlisted</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="progress" style="width: 150px;">
+                                <div class="progress-bar" style="width: {{ completion }}%">{{ completion }}%</div>
+                            </div>
+                            <a href="{{ url_for('auth.developer_profile') }}" class="btn btn-sm btn-outline-primary mt-2">
+                                Update Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+    
+    <!-- Applications Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Applications</h5>
+                </div>
+                <div class="card-body">
+                    {% if applications %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Project</th>
+                                        <th>Status</th>
+                                        <th>Applied</th>
+                                        <th>Deadline</th>
+                                        <th>Reward</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for application in applications %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <h6 class="mb-1">{{ application.project.title }}</h6>
+                                                <small class="text-muted">{{ application.project.company_user.company_profile.company_name if application.project.company_user.company_profile else application.project.company_user.username }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% set status_colors = {
+                                                'pending': 'warning',
+                                                'shortlisted': 'success',
+                                                'rejected': 'danger'
+                                            } %}
+                                            <span class="badge bg-{{ status_colors.get(application.status, 'secondary') }}">
+                                                {{ application.status.title() }}
+                                            </span>
+                                            {% if application.submission %}
+                                                <br><small class="text-success">Submitted</small>
+                                                {% if application.submission.is_winner %}
+                                                    <br><span class="badge bg-warning">Winner!</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ application.applied_at.strftime('%b %d, %Y') }}</small>
+                                        </td>
+                                        <td>
+                                            <small>{{ application.project.deadline.strftime('%b %d, %Y') }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>${{ "%.0f"|format(application.project.winner_reward) }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('main.project_detail', id=application.project.id) }}" 
+                                                   class="btn btn-outline-primary">View</a>
+                                                {% if application.status == 'shortlisted' and not application.submission %}
+                                                    <a href="{{ url_for('main.submit_work', application_id=application.id) }}" 
+                                                       class="btn btn-success">Submit Work</a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-file-earmark-text text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 text-muted">No applications yet</h5>
+                            <p class="text-muted">Start by browsing and applying to projects</p>
+                            <a href="{{ url_for('main.projects') }}" class="btn btn-primary">Browse Projects</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="fw-bold">Manage Project: {{ project.title }}</h1>
+                <div>
+                    <span class="badge bg-{{ 'success' if project.status == 'open' else 'warning' if project.status == 'shortlisting' else 'info' if project.status == 'submission' else 'primary' }} me-2">
+                        {{ project.status.title() }}
+                    </span>
+                    <a href="{{ url_for('main.project_detail', id=project.id) }}" class="btn btn-outline-primary">View Public Page</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Project Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold">{{ applications|length }}</h3>
+                    <p class="mb-0">Total Applications</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold">{{ shortlisted|length }}</h3>
+                    <p class="mb-0">Shortlisted</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold">{{ submissions|length }}</h3>
+                    <p class="mb-0">Submissions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold">{{ project.max_shortlist - shortlisted|length }}</h3>
+                    <p class="mb-0">Shortlist Slots Left</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Applications Section -->
+    {% if project.status in ['open', 'shortlisting'] %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Applications ({{ applications|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if applications %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Developer</th>
+                                        <th>Skills</th>
+                                        <th>Experience</th>
+                                        <th>Applied</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for application in applications %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <h6 class="mb-1">{{ application.developer_user.developer_profile.full_name if application.developer_user.developer_profile else application.developer_user.username }}</h6>
+                                                <small class="text-muted">{{ application.developer_user.email }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if application.developer_user.developer_profile and application.developer_user.developer_profile.skills %}
+                                                {% for skill in application.developer_user.developer_profile.skills.split(',')[:3] %}
+                                                    <span class="badge bg-light text-dark me-1">{{ skill.strip() }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">Not specified</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if application.developer_user.developer_profile %}
+                                                <span class="badge bg-info">{{ application.developer_user.developer_profile.experience_level.title() if application.developer_user.developer_profile.experience_level else 'Not specified' }}</span>
+                                            {% else %}
+                                                <span class="text-muted">Not specified</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ application.applied_at.strftime('%b %d, %Y') }}</small>
+                                        </td>
+                                        <td>
+                                            {% set status_colors = {'pending': 'warning', 'shortlisted': 'success', 'rejected': 'danger'} %}
+                                            <span class="badge bg-{{ status_colors.get(application.status, 'secondary') }}">
+                                                {{ application.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#applicationModal{{ application.id }}">
+                                                    View
+                                                </button>
+                                                {% if application.status == 'pending' and shortlisted|length < project.max_shortlist %}
+                                                    <a href="{{ url_for('main.shortlist_application', application_id=application.id) }}" 
+                                                       class="btn btn-success" onclick="return confirm('Shortlist this candidate?')">
+                                                        Shortlist
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 text-muted">No applications yet</h5>
+                            <p class="text-muted">Applications will appear here as developers apply to your project</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Submissions Section -->
+    {% if submissions %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Submissions ({{ submissions|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Developer</th>
+                                    <th>Submission</th>
+                                    <th>Score</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for submission in submissions %}
+                                <tr class="{{ 'table-warning' if submission.is_winner }}">
+                                    <td>
+                                        <div>
+                                            <h6 class="mb-1">{{ submission.application.developer_user.developer_profile.full_name if submission.application.developer_user.developer_profile else submission.application.developer_user.username }}</h6>
+                                            {% if submission.is_winner %}
+                                                <span class="badge bg-warning">Winner</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            {% if submission.github_url %}
+                                                <a href="{{ submission.github_url }}" target="_blank" class="btn btn-outline-dark btn-sm">
+                                                    <i class="bi bi-github"></i>
+                                                </a>
+                                            {% endif %}
+                                            {% if submission.demo_url %}
+                                                <a href="{{ submission.demo_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-globe"></i>
+                                                </a>
+                                            {% endif %}
+                                            {% if submission.figma_url %}
+                                                <a href="{{ submission.figma_url }}" target="_blank" class="btn btn-outline-info btn-sm">
+                                                    <i class="bi bi-palette"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if submission.score %}
+                                            <span class="badge bg-{{ 'success' if submission.score >= 8 else 'warning' if submission.score >= 6 else 'danger' }}">
+                                                {{ submission.score }}/10
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">Not scored</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ submission.submitted_at.strftime('%b %d, %Y') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if submission.is_winner %}
+                                            <span class="badge bg-warning">Winner</span>
+                                        {% elif submission.score %}
+                                            <span class="badge bg-info">Reviewed</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pending Review</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#submissionModal{{ submission.id }}">
+                                                View
+                                            </button>
+                                            <a href="{{ url_for('main.submission_feedback', submission_id=submission.id) }}" class="btn btn-outline-secondary">
+                                                {{ 'Edit' if submission.score else 'Review' }}
+                                            </a>
+                                            {% if not submission.is_winner and project.status != 'completed' %}
+                                                <a href="{{ url_for('main.declare_winner', submission_id=submission.id) }}" 
+                                                   class="btn btn-warning" onclick="return confirm('Declare this submission as the winner?')">
+                                                    Declare Winner
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Application Modals -->
+{% for application in applications %}
+<div class="modal fade" id="applicationModal{{ application.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Application from {{ application.developer_user.developer_profile.full_name if application.developer_user.developer_profile else application.developer_user.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Developer Info</h6>
+                        {% if application.developer_user.developer_profile %}
+                            {% set profile = application.developer_user.developer_profile %}
+                            <p><strong>Name:</strong> {{ profile.full_name }}</p>
+                            <p><strong>Experience:</strong> {{ profile.experience_level.title() if profile.experience_level else 'Not specified' }}</p>
+                            <p><strong>Skills:</strong> {{ profile.skills if profile.skills else 'Not specified' }}</p>
+                            {% if profile.portfolio_url %}
+                                <p><strong>Portfolio:</strong> <a href="{{ profile.portfolio_url }}" target="_blank">View Portfolio</a></p>
+                            {% endif %}
+                            {% if profile.github_url %}
+                                <p><strong>GitHub:</strong> <a href="{{ profile.github_url }}" target="_blank">View GitHub</a></p>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted">Developer profile not completed</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Cover Letter</h6>
+                        <p>{{ application.cover_letter }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Submission Modals -->
+{% for submission in submissions %}
+<div class="modal fade" id="submissionModal{{ submission.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submission from {{ submission.application.developer_user.developer_profile.full_name if submission.application.developer_user.developer_profile else submission.application.developer_user.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Submission Links</h6>
+                        {% if submission.github_url %}
+                            <p><strong>GitHub:</strong> <a href="{{ submission.github_url }}" target="_blank">{{ submission.github_url }}</a></p>
+                        {% endif %}
+                        {% if submission.demo_url %}
+                            <p><strong>Demo:</strong> <a href="{{ submission.demo_url }}" target="_blank">{{ submission.demo_url }}</a></p>
+                        {% endif %}
+                        {% if submission.figma_url %}
+                            <p><strong>Design:</strong> <a href="{{ submission.figma_url }}" target="_blank">{{ submission.figma_url }}</a></p>
+                        {% endif %}
+                        
+                        {% if submission.score %}
+                            <h6 class="mt-3">Review</h6>
+                            <p><strong>Score:</strong> {{ submission.score }}/10</p>
+                            {% if submission.feedback %}
+                                <p><strong>Feedback:</strong> {{ submission.feedback }}</p>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Description</h6>
+                        <p>{{ submission.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

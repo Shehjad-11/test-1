@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Apply to Project</h2>
+                        <p class="text-muted">{{ project.title }}</p>
+                    </div>
+                    
+                    <!-- Project Summary -->
+                    <div class="alert alert-light mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">Winner Reward</small>
+                                <strong class="text-success">${{ "%.0f"|format(project.winner_reward) }}</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">Deadline</small>
+                                <strong>{{ project.deadline.strftime('%b %d, %Y') }}</strong>
+                            </div>
+                        </div>
+                        {% if project.participation_reward > 0 %}
+                            <div class="mt-2">
+                                <small class="text-muted">Participation reward: </small>
+                                <strong class="text-info">${{ "%.0f"|format(project.participation_reward) }}</strong>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            {{ form.cover_letter.label(class="form-label") }}
+                            {{ form.cover_letter(class="form-control", rows="6", placeholder="Tell the company why you're the right fit for this project. Highlight relevant experience and skills.") }}
+                            {% if form.cover_letter.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.cover_letter.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Maximum 1000 characters</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> Application Process</h6>
+                            <ol class="mb-0 small">
+                                <li>Submit your application with a compelling cover letter</li>
+                                <li>Company reviews applications and shortlists candidates</li>
+                                <li>If shortlisted, you'll be invited to submit your work</li>
+                                <li>Company reviews submissions and selects winner</li>
+                                <li>Winner receives full reward, participants may receive compensation</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                            <a href="{{ url_for('main.project_detail', id=project.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

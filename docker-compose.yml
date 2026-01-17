@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://collabuser:collabpass@db:5432/collabplatform
+      - SECRET_KEY=your-secret-key-change-in-production
+      - FLASK_ENV=production
+    depends_on:
+      - db
+    volumes:
+      - ./app/static/uploads:/app/app/static/uploads
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=collabplatform
+      - POSTGRES_USER=collabuser
+      - POSTGRES_PASSWORD=collabpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
